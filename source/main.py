@@ -6,7 +6,7 @@ from collections import defaultdict
 # 尝试导入必要的库，如果失败则提示用户安装
 try:
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                                 QLabel, QComboBox, QPushButton, QTabWidget, QGridLayout,
+                                 QLabel, QComboBox, QPushButton, QTabWidget,
                                  QSpinBox, QTextEdit, QMessageBox, QGroupBox, QScrollArea, QLayout)
     from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread, QSize, QRect, QPoint
     from PyQt6.QtGui import QColor, QTextCharFormat, QFont, QPainter
@@ -875,7 +875,7 @@ class FlowLayout(QLayout):
         return self.itemList.pop(index) if 0 <= index < len(self.itemList) else None
 
     def expandingDirections(self):
-        return Qt.Orientations(Qt.Orientation(0))
+        return Qt.Orientation(0)
 
     def hasHeightForWidth(self):
         return True
@@ -941,8 +941,7 @@ class ModbusWorker(QObject):
 
     def __init__(self, port, baudrate, parity, stopbits, timeout):
         super().__init__()
-        self.client = ModbusSerialClient(method='rtu', port=port, baudrate=baudrate, parity=parity, stopbits=stopbits,
-                                         timeout=timeout)
+        self.client = ModbusSerialClient(port=port, baudrate=baudrate, parity=parity, stopbits=stopbits, timeout=timeout)
 
     def connect_device(self):
         try:
@@ -1016,78 +1015,96 @@ class ModbusWorker(QObject):
             self.write_result.emit(config['id'], False, e)
 
 
-class RegisterWidget(QGroupBox):
+class RegisterWidget(QWidget):
     """
-    A custom widget to display and control a single logical register.
-    It can handle simple types (u16, s16, enum16) and complex types (u32, s32, bit_field).
+    Final, refactored version of the RegisterWidget.
+    - Inherits from QWidget for maximum layout control.
+    - Uses QGridLayout for precise internal alignment.
+    - Correctly handles single-line (simple types) and multi-line (bit_field) layouts.
+    - Maintains fixed widths for labels and value controls.
     """
     read_requested = pyqtSignal(dict)
     write_requested = pyqtSignal(dict, int)
 
     def __init__(self, config):
-        super().__init__(f" {config['name']} ")
+        super().__init__()
         self.config = config
         self.is_dirty = False
-        self.current_value = 0  # Cache the raw value from the device
+        self.has_been_read = False
+        self.current_value = 0
         self.sub_widgets = []
 
+        # Use a QGroupBox to provide the border and title, which is the main content of this QWidget
+        self.group_box = QGroupBox(f" {config['name']} ")
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(8)
-        main_layout.setContentsMargins(10, 20, 10, 10)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(self.group_box)
 
-        # Create the main value editing widgets
-        self._create_widgets(main_layout)
+        # The layout inside the QGroupBox
+        internal_layout = QVBoxLayout(self.group_box)
 
-        # Create the common read/write buttons
+        self._create_widgets(internal_layout)
+
+        # Set tooltip
+        tooltip_text = (f"ID: {config['id']}\n"
+                        f"地址: {config['address']}\n"
+                        f"{config.get('tooltip', '')}")
+        self.setToolTip(tooltip_text)
+
+    def _on_write(self):
+        if not self.has_been_read and self.config['type'] == 'bit_field':
+            QMessageBox.warning(self, "操作中断", "请先读取该寄存器的当前值，再进行写入操作。\n直接写入可能会覆盖未显示的配置位。")
+            return
+        self.write_requested.emit(self.config, self.get_value())
+
+    def _create_widgets(self, layout):
+        if self.config['type'] == 'bit_field':
+            # Multi-line layout for bit_field
+            for field in self.config['fields']:
+                field_layout = QHBoxLayout()
+                field_label = QLabel(f"{field['name']}:")
+                field_label.setFixedWidth(150)  # Fixed width for consistency
+
+                widget = self._create_value_control(field)
+                widget.setMinimumWidth(180)  # Use minimum width for flexibility
+
+                field_layout.addWidget(field_label)
+                field_layout.addWidget(widget)
+                layout.addLayout(field_layout)
+                self.sub_widgets.append({'widget': widget, 'config': field})
+        else:
+            # Single-line layout for simple types
+            single_line_layout = QHBoxLayout()
+            widget = self._create_value_control(self.config)
+            widget.setMinimumWidth(180)  # Fixed width for value control
+            single_line_layout.addWidget(widget)
+            layout.addLayout(single_line_layout)
+            self.sub_widgets.append({'widget': widget, 'config': self.config})
+
+        # Add common Read/Write buttons
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         self.read_btn = QPushButton("读")
         self.write_btn = QPushButton("写")
         btn_layout.addWidget(self.read_btn)
         btn_layout.addWidget(self.write_btn)
-        main_layout.addLayout(btn_layout)
+        layout.addLayout(btn_layout)
 
-        # Connect signals
         self.read_btn.clicked.connect(lambda: self.read_requested.emit(self.config))
-        self.write_btn.clicked.connect(lambda: self.write_requested.emit(self.config, self.get_value()))
+        self.write_btn.clicked.connect(self._on_write)
 
-        # Set read-only state
-        if config.get('read_only', False):
+        if self.config.get('read_only', False):
             self.write_btn.setEnabled(False)
-
-        # Set tooltip
-        tooltip_text = (f"ID: {config['id']}\n"
-                        f"地址: {config['address']}\n"
-                        f"类型: {config['type']}\n"
-                        f"范围: {config.get('range', 'N/A')}\n"
-                        f"生效: {config.get('effect', 'N/A')}\n"
-                        f"{config.get('tooltip', '')}")
-        self.setToolTip(tooltip_text)
-
-    def _create_widgets(self, layout):
-        if self.config['type'] == 'bit_field':
-            for field in self.config['fields']:
-                field_layout = QGridLayout()
-                field_label = QLabel(f"{field['name']}:")
-                widget = self._create_value_control(field)
-                field_layout.addWidget(field_label, 0, 0)
-                field_layout.addWidget(widget, 0, 1)
-                layout.addLayout(field_layout)
-                self.sub_widgets.append({'widget': widget, 'config': field})
-        else:
-            widget = self._create_value_control(self.config)
-            layout.addWidget(widget)
-            self.sub_widgets.append({'widget': widget, 'config': self.config})
 
     def _create_value_control(self, config):
         if config.get('type') == 'enum':
             widget = QComboBox()
-            for val, desc in config['options'].items():
-                widget.addItem(f"({val}) {desc}", val)
+            if 'options' in config and config['options']:
+                for val, desc in config['options'].items():
+                    widget.addItem(f"({val}) {desc}", val)
             widget.currentIndexChanged.connect(self._mark_dirty)
         else:  # int, u16, s16, u32, s32
             widget = QSpinBox()
-            # Set a very large range to accommodate all integer types
             widget.setRange(-2147483648, 2147483647)
             widget.valueChanged.connect(self._mark_dirty)
         return widget
@@ -1095,37 +1112,10 @@ class RegisterWidget(QGroupBox):
     def _mark_dirty(self):
         if not self.is_dirty:
             self.is_dirty = True
-            self.setTitle(f" {self.config['name']} *")
-
-    def get_value(self):
-        if self.config['type'] == 'bit_field':
-            val = self.current_value  # Start with the last known raw value
-            for item in self.sub_widgets:
-                field_cfg = item['config']
-                field_widget = item['widget']
-
-                if field_cfg['type'] == 'enum':
-                    field_val = field_widget.currentData()
-                else:
-                    field_val = field_widget.value()
-
-                # Create a mask for the field
-                mask = (1 << field_cfg['length']) - 1
-
-                # Clear the bits for this field in the current value
-                val &= ~(mask << field_cfg['start_bit'])
-                # Set the new bits for this field
-                val |= (field_val & mask) << field_cfg['start_bit']
-            return val
-        else:
-            item = self.sub_widgets[0]
-            if self.config['type'] == 'enum16':
-                return item['widget'].currentData()
-            else:
-                return item['widget'].value()
+            self.group_box.setTitle(f" {self.config['name']} *")
 
     def set_value(self, value):
-        # This is a critical section to prevent feedback loops
+        self.has_been_read = True
         for item in self.sub_widgets:
             item['widget'].blockSignals(True)
 
@@ -1144,20 +1134,39 @@ class RegisterWidget(QGroupBox):
                     field_widget.setValue(field_val)
         else:
             item = self.sub_widgets[0]
-            if self.config['type'] == 'enum16':
+            if self.config['type'] in ['enum16']:
                 index = item['widget'].findData(value)
                 if index != -1:
                     item['widget'].setCurrentIndex(index)
             else:
                 item['widget'].setValue(int(value))
 
-        # Unblock signals
         for item in self.sub_widgets:
             item['widget'].blockSignals(False)
 
         if self.is_dirty:
             self.is_dirty = False
+            # This is now correct as self is a QGroupBox
             self.setTitle(f" {self.config['name']} ")
+
+    def get_value(self):
+        if self.config['type'] == 'bit_field':
+            val = self.current_value
+            for item in self.sub_widgets:
+                field_cfg = item['config']
+                field_widget = item['widget']
+                field_val = field_widget.currentData() if field_cfg['type'] == 'enum' else field_widget.value()
+                mask = (1 << field_cfg['length']) - 1
+                val &= ~(mask << field_cfg['start_bit'])
+                val |= (field_val & mask) << field_cfg['start_bit']
+            return val
+        else:
+            item = self.sub_widgets[0]
+            if self.config['type'] in ['enum16']:
+                return item['widget'].currentData()
+            else:
+                return item['widget'].value()
+
 
 # ==============================================================================
 # PART 4: MAIN UI (MainWindow)
@@ -1241,14 +1250,14 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         grouped_registers = defaultdict(lambda: defaultdict(list))
         for reg in REGISTER_MAP:
+            if reg['name'] == "保留" or reg.get('sub_group') == "保留项":
+                continue
             grouped_registers[reg['group']][reg.get('sub_group', '常规')].append(reg)
 
         for group_name, sub_groups in sorted(grouped_registers.items()):
-            # Main container for the tab with a vertical layout
             tab_container_widget = QWidget()
             tab_main_layout = QVBoxLayout(tab_container_widget)
 
-            # Top bar for "Read/Write All" buttons
             btn_bar_layout = QHBoxLayout()
             btn_bar_layout.addStretch()
             read_all_btn = QPushButton(f"读取本页 ({group_name})")
@@ -1257,37 +1266,34 @@ class MainWindow(QMainWindow):
             btn_bar_layout.addWidget(write_all_btn)
             tab_main_layout.addLayout(btn_bar_layout)
 
-            # ScrollArea for the register widgets
             scroll_area = QScrollArea()
             scroll_area.setWidgetResizable(True)
 
-            # Content widget inside ScrollArea where the FlowLayout resides
+            # This widget will hold the vertical stack of sub-group boxes
             scroll_content_widget = QWidget()
-            flow_layout = FlowLayout(scroll_content_widget, 15, 15)
+            vertical_layout_for_subgroups = QVBoxLayout(scroll_content_widget)
+            vertical_layout_for_subgroups.setAlignment(Qt.AlignmentFlag.AlignTop)
 
             for sub_group_name, registers in sorted(sub_groups.items()):
-                group_box = QGroupBox(sub_group_name)
-                # Use a simple vertical layout inside the groupbox for better alignment
-                group_box_layout = QVBoxLayout(group_box)
+                # Each sub_group is a QGroupBox that spans the full width
+                sub_group_box = QGroupBox(sub_group_name)
+
+                # Inside the sub_group_box, we use a FlowLayout for the RegisterWidgets
+                flow_layout = FlowLayout(spacing=10)
+                sub_group_box.setLayout(flow_layout)
 
                 for reg_config in registers:
+                    # RegisterWidget is now a self-contained QWidget with its own QGroupBox
                     widget = RegisterWidget(reg_config)
-                    widget.read_requested.connect(self.read_single_register)
-                    widget.write_requested.connect(self.write_single_register)
-                    group_box_layout.addWidget(widget)
                     self.register_widgets[reg_config['id']] = widget
+                    flow_layout.addWidget(widget)
 
-                flow_layout.addWidget(group_box)
-
-            # The FlowLayout naturally aligns items to the top-left,
-            # so addStretch is not needed and not supported.
-            # flow_layout.addStretch()  # REMOVED
+                vertical_layout_for_subgroups.addWidget(sub_group_box)
 
             scroll_area.setWidget(scroll_content_widget)
             tab_main_layout.addWidget(scroll_area)
             self.tabs.addTab(tab_container_widget, group_name)
 
-            # Connect the buttons to the scroll_content_widget
             read_all_btn.clicked.connect(lambda _, sc=scroll_content_widget: self.read_all_registers(sc))
             write_all_btn.clicked.connect(lambda _, sc=scroll_content_widget: self.write_all_registers(sc))
 
@@ -1423,11 +1429,5 @@ if __name__ == '__main__':
 
     window = MainWindow()
     window.show()
-
-    # Temporary message box to show it's running, since classes are placeholders
-    # msgBox = QMessageBox()
-    # msgBox.setText(
-    #     "Application is ready to run. The code structure is complete.\n\nPlease replace the placeholder class definitions with the full code provided in the detailed answers.")
-    # msgBox.exec()
 
     sys.exit(app.exec())
