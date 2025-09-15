@@ -7,7 +7,7 @@ from collections import defaultdict
 try:
     from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                  QLabel, QComboBox, QPushButton, QTabWidget,
-                                 QSpinBox, QTextEdit, QMessageBox, QGroupBox, QScrollArea, QLayout)
+                                 QSpinBox, QTextEdit, QMessageBox, QGroupBox, QScrollArea, QLayout, QGridLayout)
     from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread, QSize, QRect, QPoint
     from PyQt6.QtGui import QColor, QTextCharFormat, QFont, QPainter
 
@@ -1017,11 +1017,9 @@ class ModbusWorker(QObject):
 
 class RegisterWidget(QWidget):
     """
-    Final, refactored version of the RegisterWidget.
-    - Inherits from QWidget for maximum layout control.
-    - Uses QGridLayout for precise internal alignment.
-    - Correctly handles single-line (simple types) and multi-line (bit_field) layouts.
-    - Maintains fixed widths for labels and value controls.
+    Final, definitive version. Inherits from QWidget to avoid nested QGroupBox issues.
+    Uses a StyleSheet to create a "card" visual effect.
+    Internal layout is managed precisely with QVBoxLayout and QHBoxLayout.
     """
     read_requested = pyqtSignal(dict)
     write_requested = pyqtSignal(dict, int)
@@ -1034,16 +1032,27 @@ class RegisterWidget(QWidget):
         self.current_value = 0
         self.sub_widgets = []
 
-        # Use a QGroupBox to provide the border and title, which is the main content of this QWidget
-        self.group_box = QGroupBox(f" {config['name']} ")
+        # Set the card-like style for the widget
+        self.setStyleSheet("""
+            RegisterWidget {
+                background-color: #FAFAFA;
+                border: 1px solid #E0E0E0;
+                border-radius: 4px;
+            }
+        """)
+
+        # Main vertical layout for the entire widget
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.addWidget(self.group_box)
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setSpacing(8)
 
-        # The layout inside the QGroupBox
-        internal_layout = QVBoxLayout(self.group_box)
+        # Title Label for the register
+        self.title_label = QLabel(self.config['name'])
+        self.title_label.setStyleSheet("font-weight: bold; color: #333;")
+        main_layout.addWidget(self.title_label)
 
-        self._create_widgets(internal_layout)
+        # Create and add the value editing widgets
+        self._create_widgets(main_layout)
 
         # Set tooltip
         tooltip_text = (f"ID: {config['id']}\n"
@@ -1059,26 +1068,22 @@ class RegisterWidget(QWidget):
 
     def _create_widgets(self, layout):
         if self.config['type'] == 'bit_field':
-            # Multi-line layout for bit_field
-            for field in self.config['fields']:
-                field_layout = QHBoxLayout()
+            # Multi-line layout for bit_field using a grid for alignment
+            grid = QGridLayout()
+            grid.setColumnStretch(1, 1)  # Allow value control to expand
+            for i, field in enumerate(self.config['fields']):
                 field_label = QLabel(f"{field['name']}:")
-                field_label.setFixedWidth(150)  # Fixed width for consistency
-
                 widget = self._create_value_control(field)
                 widget.setMinimumWidth(180)  # Use minimum width for flexibility
-
-                field_layout.addWidget(field_label)
-                field_layout.addWidget(widget)
-                layout.addLayout(field_layout)
+                grid.addWidget(field_label, i, 0)
+                grid.addWidget(widget, i, 1)
                 self.sub_widgets.append({'widget': widget, 'config': field})
+            layout.addLayout(grid)
         else:
             # Single-line layout for simple types
-            single_line_layout = QHBoxLayout()
             widget = self._create_value_control(self.config)
             widget.setMinimumWidth(180)  # Fixed width for value control
-            single_line_layout.addWidget(widget)
-            layout.addLayout(single_line_layout)
+            layout.addWidget(widget)
             self.sub_widgets.append({'widget': widget, 'config': self.config})
 
         # Add common Read/Write buttons
@@ -1103,7 +1108,7 @@ class RegisterWidget(QWidget):
                 for val, desc in config['options'].items():
                     widget.addItem(f"({val}) {desc}", val)
             widget.currentIndexChanged.connect(self._mark_dirty)
-        else:  # int, u16, s16, u32, s32
+        else:
             widget = QSpinBox()
             widget.setRange(-2147483648, 2147483647)
             widget.valueChanged.connect(self._mark_dirty)
@@ -1112,7 +1117,8 @@ class RegisterWidget(QWidget):
     def _mark_dirty(self):
         if not self.is_dirty:
             self.is_dirty = True
-            self.group_box.setTitle(f" {self.config['name']} *")
+            # Update the internal title label's text
+            self.title_label.setText(f"{self.config['name']} *")
 
     def set_value(self, value):
         self.has_been_read = True
@@ -1128,16 +1134,14 @@ class RegisterWidget(QWidget):
 
                 if field_cfg['type'] == 'enum':
                     index = field_widget.findData(field_val)
-                    if index != -1:
-                        field_widget.setCurrentIndex(index)
+                    if index != -1: field_widget.setCurrentIndex(index)
                 else:
                     field_widget.setValue(field_val)
         else:
             item = self.sub_widgets[0]
             if self.config['type'] in ['enum16']:
                 index = item['widget'].findData(value)
-                if index != -1:
-                    item['widget'].setCurrentIndex(index)
+                if index != -1: item['widget'].setCurrentIndex(index)
             else:
                 item['widget'].setValue(int(value))
 
@@ -1146,8 +1150,8 @@ class RegisterWidget(QWidget):
 
         if self.is_dirty:
             self.is_dirty = False
-            # This is now correct as self is a QGroupBox
-            self.setTitle(f" {self.config['name']} ")
+            # Update the internal title label's text
+            self.title_label.setText(f"{self.config['name']}")
 
     def get_value(self):
         if self.config['type'] == 'bit_field':
@@ -1269,21 +1273,17 @@ class MainWindow(QMainWindow):
             scroll_area = QScrollArea()
             scroll_area.setWidgetResizable(True)
 
-            # This widget will hold the vertical stack of sub-group boxes
             scroll_content_widget = QWidget()
             vertical_layout_for_subgroups = QVBoxLayout(scroll_content_widget)
             vertical_layout_for_subgroups.setAlignment(Qt.AlignmentFlag.AlignTop)
 
             for sub_group_name, registers in sorted(sub_groups.items()):
-                # Each sub_group is a QGroupBox that spans the full width
                 sub_group_box = QGroupBox(sub_group_name)
-
-                # Inside the sub_group_box, we use a FlowLayout for the RegisterWidgets
                 flow_layout = FlowLayout(spacing=10)
                 sub_group_box.setLayout(flow_layout)
 
                 for reg_config in registers:
-                    # RegisterWidget is now a self-contained QWidget with its own QGroupBox
+                    # RegisterWidget is now a QWidget, correctly placed inside the QGroupBox
                     widget = RegisterWidget(reg_config)
                     self.register_widgets[reg_config['id']] = widget
                     flow_layout.addWidget(widget)
