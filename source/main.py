@@ -1511,7 +1511,7 @@ class MainWindow(QMainWindow):
         sub_group_order = defaultdict(list)
 
         for reg in REGISTER_MAP:
-            if reg['name'] == "保留" or reg.get('sub_group') == "保留项" or reg.get('address') <= 0:
+            if MainWindow._is_invalid_register(reg):
                 continue
             group = reg['group']
             sub_group = reg.get('sub_group', '常规')
@@ -1577,6 +1577,10 @@ class MainWindow(QMainWindow):
             write_all_btn.clicked.connect(lambda _, sc=scroll_content_widget: self.write_all_registers(sc))
 
         return self.tabs
+
+    @staticmethod
+    def _is_invalid_register(reg):
+        return reg['name'] == "保留" or reg.get('sub_group') == "保留项" or (reg.get('address') <= 0 and reg.get('id') != "FU000")
 
     def _create_log_panel(self):
         panel = QGroupBox("输出日志")
