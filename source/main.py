@@ -1215,7 +1215,7 @@ class RegisterWidget(QWidget):
             self.write_btn.setEnabled(False)
 
     def _create_value_control(self, config):
-        if config.get('type') == 'enum':
+        if config.get('type') in ['enum', 'enum16']:
             widget = QComboBox()
             if 'options' in config and config['options']:
                 for val, desc in config['options'].items():
@@ -1257,11 +1257,13 @@ class RegisterWidget(QWidget):
                     field_widget.setValue(field_val)
         else:
             item = self.sub_widgets[0]
-            if self.config['type'] in ['enum16']:
-                index = item['widget'].findData(value)
-                if index != -1: item['widget'].setCurrentIndex(index)
-            else:
-                item['widget'].setValue(int(value))
+            widget = item['widget']
+            if isinstance(widget, QComboBox):
+                index = widget.findData(value)
+                if index != -1:
+                    widget.setCurrentIndex(index)
+            elif isinstance(widget, QSpinBox):
+                widget.setValue(int(value))
 
         for item in self.sub_widgets:
             item['widget'].blockSignals(False)
@@ -1281,10 +1283,12 @@ class RegisterWidget(QWidget):
             return val
         else:
             item = self.sub_widgets[0]
-            if self.config['type'] in ['enum16']:
-                return item['widget'].currentData()
-            else:
-                return item['widget'].value()
+            widget = item['widget']
+            if isinstance(widget, QComboBox):
+                return widget.currentData()
+            elif isinstance(widget, QSpinBox):
+                return widget.value()
+            return 0  # Fallback
 
 
 # ==============================================================================
