@@ -1226,7 +1226,23 @@ class RegisterWidget(QWidget):
             widget.currentIndexChanged.connect(self._mark_dirty)
         else:
             widget = QSpinBox()
-            widget.setRange(-2147483648, 2147483647)
+            min_val, max_val = -2147483648, 2147483647  # Default wide range
+
+            if 'range' in config:
+                try:
+                    # Handle ranges like "0-10000" or "-5000~+5000"
+                    range_str = config['range'].replace(' ', '').replace('+', '')
+                    parts = range_str.split('~') if '~' in range_str else range_str.split('-')
+
+                    if len(parts) == 2:
+                        min_val = int(parts[0])
+                        max_val = int(parts[1])
+                except (ValueError, IndexError):
+                    # If parsing fails, log a warning and use the default range
+                    print(
+                        f"Warning: Could not parse range '{config['range']}' for {config.get('id', 'N/A')}. Using default.")
+
+            widget.setRange(min_val, max_val)
             widget.valueChanged.connect(self._mark_dirty)
         return widget
 
