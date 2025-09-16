@@ -953,8 +953,12 @@ class ModbusWorker(QObject):
         )
 
         self.dtype_map = {
-            'u16': 'UINT16', 's16': 'INT16', 'enum16': 'UINT16', 'bit_field': 'UINT16',
-            'u32': 'UINT32', 's32': 'INT32'
+            'u16': self.client.DATATYPE.UINT16,
+            's16': self.client.DATATYPE.INT16,
+            'enum16': self.client.DATATYPE.UINT16,
+            'bit_field': self.client.DATATYPE.UINT16,
+            'u32': self.client.DATATYPE.UINT32,
+            's32': self.client.DATATYPE.INT32
         }
 
     def read_single_register(self, config):
