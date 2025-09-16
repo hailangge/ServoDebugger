@@ -1021,7 +1021,7 @@ class ModbusWorker(QObject):
                     words = 2 if cfg['type'] in ['u32', 's32'] else 1
                     registers_slice = rr.registers[offset: offset + words]
 
-                    word_order = Endian.BIG_ENDIAN if cfg.get('word_order', 'big') == 'big' else Endian.LITTLE_ENDIAN
+                    word_order = Endian.BIG if cfg.get('word_order', 'big') == 'big' else Endian.LITTLE
 
                     value = self.client.convert_from_registers(
                         registers_slice,
@@ -1071,7 +1071,7 @@ class ModbusWorker(QObject):
             if rr.isError():
                 raise ModbusException(str(rr))
 
-            word_order = Endian.BIG_ENDIAN if config.get('word_order', 'big') == 'big' else Endian.LITTLE_ENDIAN
+            word_order = Endian.BIG if config.get('word_order', 'big') == 'big' else Endian.LITTLE
 
             value = self.client.convert_from_registers(
                 rr.registers,
@@ -1094,7 +1094,7 @@ class ModbusWorker(QObject):
             address = config['address']
             self.log_message.emit("info", f"写入 {config['id']} (地址: {address}) 值: {value}")
 
-            word_order = Endian.BIG_ENDIAN if config.get('word_order', 'big') == 'big' else Endian.LITTLE_ENDIAN
+            word_order = Endian.BIG if config.get('word_order', 'big') == 'big' else Endian.LITTLE
 
             payload = self.client.convert_to_registers(
                 value,
@@ -1132,12 +1132,20 @@ class RegisterWidget(QWidget):
 
         # Set the card-like style for the widget
         self.setStyleSheet("""
-            RegisterWidget {
-                background-color: #FAFAFA;
-                border: 1px solid #E0E0E0;
-                border-radius: 4px;
-            }
-        """)
+                    RegisterWidget {
+                        background-color: #FAFAFA;
+                        border: 1px solid #E0E0E0;
+                        border-radius: 4px;
+                    }
+                    QWidget:disabled {
+                        color: #A0A0A0;
+                        background-color: #F0F0F0;
+                    }
+                    QComboBox:disabled, QSpinBox:disabled {
+                        color: #555555;
+                        background-color: #E8E8E8;
+                    }
+                """)
 
         # Main vertical layout for the entire widget
         main_layout = QVBoxLayout(self)
@@ -1165,6 +1173,7 @@ class RegisterWidget(QWidget):
         self.write_requested.emit(self.config, self.get_value())
 
     def _create_widgets(self, layout):
+        is_read_only = self.config.get('read_only', False)
         if self.config['type'] == 'bit_field':
             # Multi-line layout for bit_field using a grid for alignment
             grid = QGridLayout()
@@ -1173,6 +1182,7 @@ class RegisterWidget(QWidget):
                 field_label = QLabel(f"{field['name']}:")
                 widget = self._create_value_control(field)
                 widget.setMinimumWidth(150)  # Use minimum width for flexibility
+                widget.setDisabled(is_read_only)
                 grid.addWidget(field_label, i, 0)
                 grid.addWidget(widget, i, 1)
                 self.sub_widgets.append({'widget': widget, 'config': field})
@@ -1181,6 +1191,7 @@ class RegisterWidget(QWidget):
             # Single-line layout for simple types
             widget = self._create_value_control(self.config)
             widget.setMinimumWidth(150)  # Fixed width for value control
+            widget.setDisabled(is_read_only)
             layout.addWidget(widget)
             self.sub_widgets.append({'widget': widget, 'config': self.config})
 
@@ -1218,6 +1229,11 @@ class RegisterWidget(QWidget):
             # Update the internal title label's text
             self.title_label.setText(f"{self.config['name']} *")
 
+    def _mark_clean(self):
+        if self.is_dirty:
+            self.is_dirty = False
+            self.title_label.setText(self.config['name'])
+
     def set_value(self, value):
         self.has_been_read = True
         for item in self.sub_widgets:
@@ -1246,10 +1262,7 @@ class RegisterWidget(QWidget):
         for item in self.sub_widgets:
             item['widget'].blockSignals(False)
 
-        if self.is_dirty:
-            self.is_dirty = False
-            # Update the internal title label's text
-            self.title_label.setText(f"{self.config['name']}")
+        self._mark_clean()
 
     def get_value(self):
         if self.config['type'] == 'bit_field':
