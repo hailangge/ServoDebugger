@@ -1074,7 +1074,7 @@ class RegisterWidget(QWidget):
             for i, field in enumerate(self.config['fields']):
                 field_label = QLabel(f"{field['name']}:")
                 widget = self._create_value_control(field)
-                widget.setMinimumWidth(180)  # Use minimum width for flexibility
+                widget.setMinimumWidth(150)  # Use minimum width for flexibility
                 grid.addWidget(field_label, i, 0)
                 grid.addWidget(widget, i, 1)
                 self.sub_widgets.append({'widget': widget, 'config': field})
@@ -1082,7 +1082,7 @@ class RegisterWidget(QWidget):
         else:
             # Single-line layout for simple types
             widget = self._create_value_control(self.config)
-            widget.setMinimumWidth(180)  # Fixed width for value control
+            widget.setMinimumWidth(150)  # Fixed width for value control
             layout.addWidget(widget)
             self.sub_widgets.append({'widget': widget, 'config': self.config})
 
@@ -1253,12 +1253,26 @@ class MainWindow(QMainWindow):
     def _create_register_panel(self):
         self.tabs = QTabWidget()
         grouped_registers = defaultdict(lambda: defaultdict(list))
+        group_order = []
+        sub_group_order = defaultdict(list)
+
         for reg in REGISTER_MAP:
             if reg['name'] == "保留" or reg.get('sub_group') == "保留项":
                 continue
+            group = reg['group']
+            sub_group = reg.get('sub_group', '常规')
+
+            if group not in group_order:
+                group_order.append(group)
+            if sub_group not in sub_group_order[group]:
+                sub_group_order[group].append(sub_group)
+
             grouped_registers[reg['group']][reg.get('sub_group', '常规')].append(reg)
 
-        for group_name, sub_groups in sorted(grouped_registers.items()):
+        for group_name in group_order:
+            sub_groups = grouped_registers[group_name]
+
+            # Start of tab creation logic (remains the same)
             tab_container_widget = QWidget()
             tab_main_layout = QVBoxLayout(tab_container_widget)
 
@@ -1272,18 +1286,20 @@ class MainWindow(QMainWindow):
 
             scroll_area = QScrollArea()
             scroll_area.setWidgetResizable(True)
-
             scroll_content_widget = QWidget()
             vertical_layout_for_subgroups = QVBoxLayout(scroll_content_widget)
             vertical_layout_for_subgroups.setAlignment(Qt.AlignmentFlag.AlignTop)
+            # End of tab creation logic
 
-            for sub_group_name, registers in sorted(sub_groups.items()):
+            for sub_group_name in sub_group_order[group_name]:
+                registers = sub_groups[sub_group_name]
+
                 sub_group_box = QGroupBox(sub_group_name)
                 flow_layout = FlowLayout(spacing=10)
                 sub_group_box.setLayout(flow_layout)
 
+                # The rest of the register creation loop remains the same
                 for reg_config in registers:
-                    # RegisterWidget is now a QWidget, correctly placed inside the QGroupBox
                     widget = RegisterWidget(reg_config)
                     self.register_widgets[reg_config['id']] = widget
                     flow_layout.addWidget(widget)
