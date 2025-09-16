@@ -941,12 +941,10 @@ class ModbusWorker(QObject):
 
     def __init__(self, port, baudrate, parity, stopbits, timeout):
         super().__init__()
-        # 存储连接参数作为实例属性
         self._port = port
         self._baudrate = baudrate
-        # 初始化 ModbusSerialClient
+
         self.client = ModbusSerialClient(
-            # method='rtu' removed for v3 compatibility
             port=self._port,
             baudrate=self._baudrate,
             parity=parity,
@@ -954,44 +952,52 @@ class ModbusWorker(QObject):
             timeout=timeout
         )
 
+        # Helper map for the new conversion API
+        self.dtype_map = {
+            'u16': 'UINT16', 's16': 'INT16', 'enum16': 'UINT16', 'bit_field': 'UINT16',
+            'u32': 'UINT32', 's32': 'INT32'
+        }
+
     def connect_device(self):
         try:
             if self.client.connect():
-                # 使用 self._port 报告连接状态
                 self.connection_status.emit(True, f"成功连接到 {self._port}")
                 self.log_message.emit("info", f"串口 {self._port} 已连接。")
             else:
-                # 即使连接失败，也报告尝试的端口
                 raise ConnectionError(f"连接失败: 无法打开端口 {self._port}")
         except Exception as e:
-            # 在错误日志中也使用 self._port
             self.connection_status.emit(False, f"连接失败: {e}")
             self.log_message.emit("error", f"连接串口 {self._port} 失败: {e}")
 
     def disconnect_device(self):
-        if self.client.is_socket_open(): self.client.close()
-        self.connection_status.emit(False, "已断开连接")
-        self.log_message.emit("info", "连接已断开。")
+        if self.client.is_socket_open():
+            self.client.close()
+        self.connection_status.emit(False, f"已断开连接 {self._port}")
+        self.log_message.emit("info", f"连接已断开 {self._port}。")
 
     def read_logical_value(self, config):
         if not self.client.is_socket_open():
             self.read_result.emit(config['id'], ModbusException("客户端未连接"))
             return
         try:
-            reg_type, address = config['type'], config['address']
+            reg_type = config['type']
+            address = config['address']
             self.log_message.emit("info", f"读取 {config['id']} (地址: {address})")
-            value = None
-            if reg_type in ['u16', 's16', 'enum16', 'bit_field']:
-                rr = self.client.read_holding_registers(address, 1, slave=1)
-                if rr.isError(): raise ModbusException(str(rr))
-                decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG)
-                value = decoder.decode_16bit_int() if reg_type == 's16' else decoder.decode_16bit_uint()
-            elif reg_type in ['u32', 's32']:
-                word_order = Endian.BIG if config.get('word_order', 'big') == 'big' else Endian.LITTLE
-                rr = self.client.read_holding_registers(address, 2, slave=1)
-                if rr.isError(): raise ModbusException(str(rr))
-                decoder = BinaryPayloadDecoder.fromRegisters(rr.registers, byteorder=Endian.BIG, wordorder=word_order)
-                value = decoder.decode_32bit_int() if reg_type == 's32' else decoder.decode_32bit_uint()
+
+            word_count = 2 if reg_type in ['u32', 's32'] else 1
+
+            rr = self.client.read_holding_registers(address, count=word_count, slave=1)
+
+            if rr.isError():
+                raise ModbusException(str(rr))
+
+            word_order = Endian.BIG_ENDIAN if config.get('word_order', 'big') == 'big' else Endian.LITTLE_ENDIAN
+
+            value = self.client.convert_from_registers(
+                rr.registers,
+                self.dtype_map[reg_type],
+                word_order=word_order
+            )
 
             self.log_message.emit("info", f"读取成功: {config['id']} = {value}")
             self.read_result.emit(config['id'], value)
@@ -1004,23 +1010,21 @@ class ModbusWorker(QObject):
             self.write_result.emit(config['id'], False, ModbusException("客户端未连接"))
             return
         try:
-            reg_type, address = config['type'], config['address']
+            reg_type = config['type']
+            address = config['address']
             self.log_message.emit("info", f"写入 {config['id']} (地址: {address}) 值: {value}")
-            builder = BinaryPayloadBuilder(byteorder=Endian.BIG)
-            if reg_type in ['u16', 's16', 'enum16', 'bit_field']:
-                if reg_type == 's16':
-                    builder.add_16bit_int(int(value))
-                else:
-                    builder.add_16bit_uint(int(value))
-                self.client.write_registers(address, builder.to_registers(), slave=1)
-            elif reg_type in ['u32', 's32']:
-                word_order = Endian.BIG if config.get('word_order', 'big') == 'big' else Endian.LITTLE
-                builder._wordorder = word_order
-                if reg_type == 's32':
-                    builder.add_32bit_int(int(value))
-                else:
-                    builder.add_32bit_uint(int(value))
-                self.client.write_registers(address, builder.to_registers(), slave=1)
+
+            word_order = Endian.BIG_ENDIAN if config.get('word_order', 'big') == 'big' else Endian.LITTLE_ENDIAN
+
+            payload = self.client.convert_to_registers(
+                value,
+                self.dtype_map[reg_type],
+                word_order=word_order
+            )
+
+            # write_registers is used for both single and multiple registers
+            # The 'slave' argument is now a keyword argument as well.
+            self.client.write_registers(address, payload, slave=1)
 
             self.log_message.emit("info", f"写入成功: {config['id']} = {value}")
             self.write_result.emit(config['id'], True, value)
@@ -1317,6 +1321,8 @@ class MainWindow(QMainWindow):
                     widget = RegisterWidget(reg_config)
                     self.register_widgets[reg_config['id']] = widget
                     flow_layout.addWidget(widget)
+                    widget.read_requested.connect(self.read_single_register)
+                    widget.write_requested.connect(self.write_single_register)
 
                 vertical_layout_for_subgroups.addWidget(sub_group_box)
 
@@ -1381,10 +1387,10 @@ class MainWindow(QMainWindow):
 
     def disconnect_device(self):
         if self.modbus_thread and self.modbus_thread.isRunning():
-            # Use invokeMethod to ensure disconnect is called in the worker's thread
+            # Direct call to worker method
             self.modbus_worker.disconnect_device()
             self.modbus_thread.quit()
-            self.modbus_thread.wait(2000)  # Wait up to 2 seconds for clean exit
+            self.modbus_thread.wait(2000)
         self.on_connection_status(False, "手动断开")
 
     def on_connection_status(self, is_connected, message):
