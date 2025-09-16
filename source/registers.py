@@ -581,12 +581,39 @@ POSITION_PARAMETERS = [
     {"id": "FU349", "name": "多段内部位置循环次数", "group": "位置参数", "sub_group": "内部位置模式", "type": "u16", "address": 349,
      "read_only": False, "range": "0-30000", "effect": "立即", "tooltip": "0表示无限循环"},
 
-    # --- 多段位置速度与位置(1-8) ---
+    # --- 多段位置速度(1-8) ---
     {"id": "FU330", "name": "位置1 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
      "address": 330, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU331", "name": "位置2 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 331, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU332", "name": "位置3 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 332, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU333", "name": "位置4 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 333, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU334", "name": "位置5 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 334, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU335", "name": "位置6 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 335, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU336", "name": "位置7 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 336, "read_only": False, "range": "1-65535", "effect": "立即"},
+    {"id": "FU337", "name": "位置8 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
+     "address": 337, "read_only": False, "range": "1-65535", "effect": "立即"},
     {"id": "FU350", "name": "位置1 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 350,
      "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
-    # ... (FU331-337 for speeds 2-8, FU352-364 for positions 2-8 would follow the same pattern)
+    {"id": "FU352", "name": "位置2 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 352,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
+    {"id": "FU354", "name": "位置3 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 354,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
+    {"id": "FU356", "name": "位置4 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 356,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
+    {"id": "FU358", "name": "位置5 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 358,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
+    {"id": "FU360", "name": "位置6 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 360,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
+    {"id": "FU362", "name": "位置7 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 362,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
+    {"id": "FU364", "name": "位置8 给定位置", "group": "位置参数", "sub_group": "多段位置(1-8)", "type": "s32", "address": 364,
+     "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
 
     # --- 龙门同步与全闭环 ---
     {"id": "FU376", "name": "位置反馈来源", "group": "位置参数", "sub_group": "龙门同步与全闭环", "type": "enum16", "address": 376,
@@ -618,10 +645,60 @@ POSITION_PARAMETERS = [
     ]},
     {"id": "FU389", "name": "位置指令方向滤波频率", "group": "位置参数", "sub_group": "中断与方向滤波", "type": "u16", "address": 389,
      "read_only": False, "range": "1-15", "effect": "立即"},
-]
 
-# Note: For brevity, repetitive multi-segment position (FU352-364) and speed (FU331-337)
-# registers are omitted but follow the pattern of FU350 and FU330.
+    # --- 多段位置加减速(1-8) ---
+    {"id": "FU310", "name": "位置1 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 310, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU311", "name": "位置1 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 311, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU312", "name": "位置2 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 312, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU313", "name": "位置2 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 313, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU314", "name": "位置3 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 314, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU315", "name": "位置3 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 315, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU316", "name": "位置4 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 316, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU317", "name": "位置4 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 317, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU318", "name": "位置5 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 318, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU319", "name": "位置5 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 319, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU320", "name": "位置6 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 320, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU321", "name": "位置6 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 321, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU322", "name": "位置7 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 322, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU323", "name": "位置7 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 323, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU324", "name": "位置8 加速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 324, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU325", "name": "位置8 减速时间 (ms)", "group": "位置参数", "sub_group": "多段位置加减速(1-8)", "type": "u16",
+     "address": 325, "read_only": False, "range": "0-32000", "effect": "立即"},
+
+
+    # --- 多段位置间隔时间(1-8) ---
+    {"id": "FU366", "name": "第1段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 366, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU367", "name": "第2段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 367, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU368", "name": "第3段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 368, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU369", "name": "第4段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 369, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU370", "name": "第5段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 370, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU371", "name": "第6段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 371, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU372", "name": "第7段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 372, "read_only": False, "range": "0-32000", "effect": "立即"},
+    {"id": "FU373", "name": "第8段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
+     "address": 373, "read_only": False, "range": "0-32000", "effect": "立即"},
+]
 
 # ==============================================================================
 # 7.3.5 输入输出参数 (FU400 ~ FU445)
@@ -669,31 +746,46 @@ IO_PARAMETERS = [
      "read_only": False, "range": "-1000~+1000", "effect": "立即"},
 
     # --- DI端子功能 (手册中DI1-DI3对应FU407-419) ---
-    {"id": "FU407_DI1", "name": "DI1端子功能", "group": "输入输出参数", "sub_group": "DI端子功能", "type": "bit_field",
-     "address": 407, "read_only": False, "effect": "立即", "fields": [
+    # --- DI端子功能 (完整) ---
+    {"id": "FU407_DI1", "name": "DI1端子功能", "group": "输入输出参数", "sub_group": "DI端子功能", "type": "bit_field", "address": 407, "read_only": False, "effect": "立即", "fields": [
         {"name": "节点类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
-        {"name": "功能选择", "start_bit": 0, "length": 6, "type": "enum",
-         "options": {0: "伺服使能(SON-I)", 1: "报警复位(AL-RST)", 2: "正转转矩限制(F-CL)", 3: "反转转矩限制(R-CL)", 4: "内部速度选择1(SD-S1)",
-                     5: "内部速度选择2(SD-S2)", 6: "内部速度方向(SD-DIR)", 7: "零速箝位(ZCLAMP)", 8: "增益切换(GAIN-SEL)",
-                     9: "内部位置终止(STOP)", 10: "脉冲清除(CLR)", 11: "指令脉冲禁止(INH-P)", 12: "紧急停止(ESP)", 13: "反转禁止(R-INH)",
-                     14: "正转禁止(F-INH)", 16: "内部位置选择1(SD0)", 17: "内部位置选择2(SD1)", 18: "内部位置选择3(SD2)", 19: "内部位置暂停(HOLD)",
-                     20: "内部位置触发(CTRG)", 21: "原点检索触发(SHOM)", 22: "外部参考原点(ORGP)", 23: "模拟量速度正转(F-AS)",
-                     24: "模拟量速度反转(R-AS)", 25: "模式切换(M-SEL)", 26: "正向点动(JOGU)", 27: "反向点动(JOGD)", 28: "电机过热(HOT)",
-                     29: "中断定长释放(XintTrig)", 30: "中断定长启用(XintRest)", 31: "龙门同步启动(GAN-SYNC)", 33: "电子齿轮选择(GEAR_SEL)"}}
+        {"name": "功能选择", "start_bit": 0, "length": 6, "type": "enum", "options": {0:"伺服使能(SON-I)", 1:"报警复位(AL-RST)", 2:"正转转矩限制(F-CL)", 3:"反转转矩限制(R-CL)", 4:"内部速度选择1(SD-S1)", 5:"内部速度选择2(SD-S2)", 6:"内部速度方向(SD-DIR)", 7:"零速箝位(ZCLAMP)", 8:"增益切换(GAIN-SEL)", 9:"内部位置终止(STOP)", 10:"脉冲清除(CLR)", 11:"指令脉冲禁止(INH-P)", 12:"紧急停止(ESP)", 13:"反转禁止(R-INH)", 14:"正转禁止(F-INH)", 16:"内部位置选择1(SD0)", 17:"内部位置选择2(SD1)", 18:"内部位置选择3(SD2)", 19:"内部位置暂停(HOLD)", 20:"内部位置触发(CTRG)", 21:"原点检索触发(SHOM)", 22:"外部参考原点(ORGP)", 23:"模拟量速度正转(F-AS)", 24:"模拟量速度反转(R-AS)", 25:"模式切换(M-SEL)", 26:"正向点动(JOGU)", 27:"反向点动(JOGD)", 28:"电机过热(HOT)", 29:"中断定长释放(XintTrig)", 30:"中断定长启用(XintRest)", 31:"龙门同步启动(GAN-SYNC)", 33:"电子齿轮选择(GEAR_SEL)"}}
     ]},
-    # ... Similarly, FU408 for DI2, FU409 for DI3, etc. up to FU419 ...
+    {"id": "FU408_DI2", "name": "DI2端子功能", "group": "输入输出参数", "sub_group": "DI端子功能", "type": "bit_field", "address": 408, "read_only": False, "effect": "立即", "fields": [
+        {"name": "节点类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 6, "type": "enum", "options": {0:"伺服使能(SON-I)", 1:"报警复位(AL-RST)", 2:"正转转矩限制(F-CL)", 3:"反转转矩限制(R-CL)", 4:"内部速度选择1(SD-S1)", 5:"内部速度选择2(SD-S2)", 6:"内部速度方向(SD-DIR)", 7:"零速箝位(ZCLAMP)", 8:"增益切换(GAIN-SEL)", 9:"内部位置终止(STOP)", 10:"脉冲清除(CLR)", 11:"指令脉冲禁止(INH-P)", 12:"紧急停止(ESP)", 13:"反转禁止(R-INH)", 14:"正转禁止(F-INH)", 16:"内部位置选择1(SD0)", 17:"内部位置选择2(SD1)", 18:"内部位置选择3(SD2)", 19:"内部位置暂停(HOLD)", 20:"内部位置触发(CTRG)", 21:"原点检索触发(SHOM)", 22:"外部参考原点(ORGP)", 23:"模拟量速度正转(F-AS)", 24:"模拟量速度反转(R-AS)", 25:"模式切换(M-SEL)", 26:"正向点动(JOGU)", 27:"反向点动(JOGD)", 28:"电机过热(HOT)", 29:"中断定长释放(XintTrig)", 30:"中断定长启用(XintRest)", 31:"龙门同步启动(GAN-SYNC)", 33:"电子齿轮选择(GEAR_SEL)"}}
+    ]},
+    {"id": "FU409_DI3", "name": "DI3端子功能", "group": "输入输出参数", "sub_group": "DI端子功能", "type": "bit_field", "address": 409, "read_only": False, "effect": "立即", "fields": [
+        {"name": "节点类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 6, "type": "enum", "options": {0:"伺服使能(SON-I)", 1:"报警复位(AL-RST)", 2:"正转转矩限制(F-CL)", 3:"反转转矩限制(R-CL)", 4:"内部速度选择1(SD-S1)", 5:"内部速度选择2(SD-S2)", 6:"内部速度方向(SD-DIR)", 7:"零速箝位(ZCLAMP)", 8:"增益切换(GAIN-SEL)", 9:"内部位置终止(STOP)", 10:"脉冲清除(CLR)", 11:"指令脉冲禁止(INH-P)", 12:"紧急停止(ESP)", 13:"反转禁止(R-INH)", 14:"正转禁止(F-INH)", 16:"内部位置选择1(SD0)", 17:"内部位置选择2(SD1)", 18:"内部位置选择3(SD2)", 19:"内部位置暂停(HOLD)", 20:"内部位置触发(CTRG)", 21:"原点检索触发(SHOM)", 22:"外部参考原点(ORGP)", 23:"模拟量速度正转(F-AS)", 24:"模拟量速度反转(R-AS)", 25:"模式切换(M-SEL)", 26:"正向点动(JOGU)", 27:"反向点动(JOGD)", 28:"电机过热(HOT)", 29:"中断定长释放(XintTrig)", 30:"中断定长启用(XintRest)", 31:"龙门同步启动(GAN-SYNC)", 33:"电子齿轮选择(GEAR_SEL)"}}
+    ]},
+    # Assuming DI4-DI8 follow the same pattern and addresses
+    {"id": "FU410_DI4", "name": "DI4端子功能", "group": "输入输出参数", "sub_group": "DI端子功能", "type": "bit_field", "address": 410, "read_only": False, "effect": "立即", "fields": [
+        {"name": "节点类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 6, "type": "enum", "options": {0:"伺服使能(SON-I)", 1:"报警复位(AL-RST)", 2:"正转转矩限制(F-CL)", 3:"反转转矩限制(R-CL)", 4:"内部速度选择1(SD-S1)", 5:"内部速度选择2(SD-S2)", 6:"内部速度方向(SD-DIR)", 7:"零速箝位(ZCLAMP)", 8:"增益切换(GAIN-SEL)", 9:"内部位置终止(STOP)", 10:"脉冲清除(CLR)", 11:"指令脉冲禁止(INH-P)", 12:"紧急停止(ESP)", 13:"反转禁止(R-INH)", 14:"正转禁止(F-INH)", 16:"内部位置选择1(SD0)", 17:"内部位置选择2(SD1)", 18:"内部位置选择3(SD2)", 19:"内部位置暂停(HOLD)", 20:"内部位置触发(CTRG)", 21:"原点检索触发(SHOM)", 22:"外部参考原点(ORGP)", 23:"模拟量速度正转(F-AS)", 24:"模拟量速度反转(R-AS)", 25:"模式切换(M-SEL)", 26:"正向点动(JOGU)", 27:"反向点动(JOGD)", 28:"电机过热(HOT)", 29:"中断定长释放(XintTrig)", 30:"中断定长启用(XintRest)", 31:"龙门同步启动(GAN-SYNC)", 33:"电子齿轮选择(GEAR_SEL)"}}
+    ]},
 
     # --- DO端子功能 ---
-    {"id": "FU421_DO1", "name": "DO1端子功能", "group": "输入输出参数", "sub_group": "DO端子功能", "type": "bit_field",
-     "address": 421, "read_only": False, "effect": "立即", "tooltip": "小功率型伺服此DO口输出由FU020参数控制", "fields": [
+    {"id": "FU421_DO1", "name": "DO1端子功能", "group": "输入输出参数", "sub_group": "DO端子功能", "type": "bit_field", "address": 421, "read_only": False, "effect": "立即", "tooltip": "小功率型伺服此DO口输出由FU020参数控制", "fields": [
         {"name": "输出类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
-        {"name": "功能选择", "start_bit": 0, "length": 4, "type": "enum",
-         "options": {0: "伺服准备好(S-RDY)", 1: "伺服使能(SON-O)", 2: "旋转检出(TGON)", 3: "速度到达(V-CMP)", 4: "位置到达(P-CMP)",
-                     5: "转矩限制中(T-LT)", 6: "伺服报警(ALM)", 7: "电磁抱闸控制(BRAKE)", 8: "过载预警(OL-W)", 9: "速度限制中(S-LT)",
-                     10: "内部位置触发中(CTRGING)", 11: "位置偏差过大警告(PER-W)", 12: "原点找到(HOME)", 13: "目标转矩到达(T-CMP)",
-                     15: "Z信号输出(Z-OUT)"}}
+        {"name": "功能选择", "start_bit": 0, "length": 4, "type": "enum", "options": {0:"伺服准备好(S-RDY)", 1:"伺服使能(SON-O)", 2:"旋转检出(TGON)", 3:"速度到达(V-CMP)", 4:"位置到达(P-CMP)", 5:"转矩限制中(T-LT)", 6:"伺服报警(ALM)", 7:"电磁抱闸控制(BRAKE)", 8:"过载预警(OL-W)", 9:"速度限制中(S-LT)", 10:"内部位置触发中(CTRGING)", 11:"位置偏差过大警告(PER-W)", 12:"原点找到(HOME)", 13:"目标转矩到达(T-CMP)", 15:"Z信号输出(Z-OUT)"}}
     ]},
-    # ... Similarly, FU422 for DO2, FU423 for DO3, FU425 for ALM ...
+    {"id": "FU422_DO2", "name": "DO2端子功能", "group": "输入输出参数", "sub_group": "DO端子功能", "type": "bit_field", "address": 422, "read_only": False, "effect": "立即", "fields": [
+        {"name": "输出类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 4, "type": "enum", "options": {0:"伺服准备好(S-RDY)", 1:"伺服使能(SON-O)", 2:"旋转检出(TGON)", 3:"速度到达(V-CMP)", 4:"位置到达(P-CMP)", 5:"转矩限制中(T-LT)", 6:"伺服报警(ALM)", 7:"电磁抱闸控制(BRAKE)", 8:"过载预警(OL-W)", 9:"速度限制中(S-LT)", 10:"内部位置触发中(CTRGING)", 11:"位置偏差过大警告(PER-W)", 12:"原点找到(HOME)", 13:"目标转矩到达(T-CMP)", 15:"Z信号输出(Z-OUT)"}}
+    ]},
+    {"id": "FU423_DO3", "name": "DO3端子功能", "group": "输入输出参数", "sub_group": "DO端子功能", "type": "bit_field", "address": 423, "read_only": False, "effect": "立即", "fields": [
+        {"name": "输出类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 4, "type": "enum", "options": {0:"伺服准备好(S-RDY)", 1:"伺服使能(SON-O)", 2:"旋转检出(TGON)", 3:"速度到达(V-CMP)", 4:"位置到达(P-CMP)", 5:"转矩限制中(T-LT)", 6:"伺服报警(ALM)", 7:"电磁抱闸控制(BRAKE)", 8:"过载预警(OL-W)", 9:"速度限制中(S-LT)", 10:"内部位置触发中(CTRGING)", 11:"位置偏差过大警告(PER-W)", 12:"原点找到(HOME)", 13:"目标转矩到达(T-CMP)", 15:"Z信号输出(Z-OUT)"}}
+    ]},
+    {"id": "FU424_DO4", "name": "DO4端子功能", "group": "输入输出参数", "sub_group": "DO端子功能", "type": "bit_field", "address": 424, "read_only": False, "effect": "立即", "fields": [
+        {"name": "输出类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 4, "type": "enum", "options": {0:"伺服准备好(S-RDY)", 1:"伺服使能(SON-O)", 2:"旋转检出(TGON)", 3:"速度到达(V-CMP)", 4:"位置到达(P-CMP)", 5:"转矩限制中(T-LT)", 6:"伺服报警(ALM)", 7:"电磁抱闸控制(BRAKE)", 8:"过载预警(OL-W)", 9:"速度限制中(S-LT)", 10:"内部位置触发中(CTRGING)", 11:"位置偏差过大警告(PER-W)", 12:"原点找到(HOME)", 13:"目标转矩到达(T-CMP)", 15:"Z信号输出(Z-OUT)"}}
+    ]},
+    {"id": "FU425_ALM", "name": "ALM端子功能", "group": "输入输出参数", "sub_group": "DO端子功能", "type": "bit_field", "address": 425, "read_only": False, "effect": "立即", "fields": [
+        {"name": "输出类型", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "常闭(NC)", 1: "常开(NO)"}},
+        {"name": "功能选择", "start_bit": 0, "length": 4, "type": "enum", "options": {0:"伺服准备好(S-RDY)", 1:"伺服使能(SON-O)", 2:"旋转检出(TGON)", 3:"速度到达(V-CMP)", 4:"位置到达(P-CMP)", 5:"转矩限制中(T-LT)", 6:"伺服报警(ALM)", 7:"电磁抱闸控制(BRAKE)", 8:"过载预警(OL-W)", 9:"速度限制中(S-LT)", 10:"内部位置触发中(CTRGING)", 11:"位置偏差过大警告(PER-W)", 12:"原点找到(HOME)", 13:"目标转矩到达(T-CMP)", 15:"Z信号输出(Z-OUT)"}}
+    ]},
 
     # --- 端子滤波 ---
     {"id": "FU438", "name": "DI1端子滤波时间", "group": "输入输出参数", "sub_group": "端子滤波", "type": "u16", "address": 438,
