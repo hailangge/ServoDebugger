@@ -952,11 +952,91 @@ class ModbusWorker(QObject):
             timeout=timeout
         )
 
-        # Helper map for the new conversion API
         self.dtype_map = {
             'u16': 'UINT16', 's16': 'INT16', 'enum16': 'UINT16', 'bit_field': 'UINT16',
             'u32': 'UINT32', 's32': 'INT32'
         }
+
+    def read_single_register(self, config):
+        """Wrapper to read a single register using the multiple-read logic."""
+        self.read_multiple_registers([config])
+
+    def read_multiple_registers(self, configs: list):
+        """
+        Reads a list of registers by grouping them into contiguous blocks
+        and sending one read request per block.
+        """
+        if not self.client.is_socket_open():
+            for cfg in configs:
+                self.read_result.emit(cfg['id'], ModbusException("客户端未连接"))
+            return
+        if not configs:
+            return
+
+        # Sort configs by address to make grouping easier
+        sorted_configs = sorted(configs, key=lambda x: x['address'])
+
+        # --- Block Grouping Logic ---
+        read_blocks = []
+        if sorted_configs:
+            current_block = {
+                'start_address': sorted_configs[0]['address'],
+                'word_count': 0,
+                'configs': []
+            }
+            for cfg in sorted_configs:
+                addr = cfg['address']
+                words = 2 if cfg['type'] in ['u32', 's32'] else 1
+
+                # If current register is not contiguous with the block, end the current block
+                if addr != current_block['start_address'] + current_block['word_count']:
+                    if current_block['configs']:
+                        read_blocks.append(current_block)
+                    # Start a new block
+                    current_block = {'start_address': addr, 'word_count': 0, 'configs': []}
+
+                # Add the current register to the current block
+                current_block['word_count'] += words
+                current_block['configs'].append(cfg)
+
+            # Add the last block
+            if current_block['configs']:
+                read_blocks.append(current_block)
+
+        # --- Execute Reads and Unpack Results ---
+        for block in read_blocks:
+            try:
+                start = block['start_address']
+                count = block['word_count']
+                self.log_message.emit("info", f"批量读取: 地址={start}, 数量={count}")
+
+                rr = self.client.read_holding_registers(address=start, count=count, slave=1)
+
+                if rr.isError():
+                    raise ModbusException(f"Modbus error on block read: {rr}")
+
+                # --- Unpack the results for each register in the block ---
+                offset = 0
+                for cfg in block['configs']:
+                    words = 2 if cfg['type'] in ['u32', 's32'] else 1
+                    registers_slice = rr.registers[offset: offset + words]
+
+                    word_order = Endian.BIG_ENDIAN if cfg.get('word_order', 'big') == 'big' else Endian.LITTLE_ENDIAN
+
+                    value = self.client.convert_from_registers(
+                        registers_slice,
+                        self.dtype_map[cfg['type']],
+                        word_order=word_order
+                    )
+
+                    self.read_result.emit(cfg['id'], value)
+                    offset += words
+
+            except Exception as e:
+                self.log_message.emit("error", f"块读取失败: 地址={block['start_address']}, 错误: {e}")
+                # Emit error for all registers in this failed block
+                for cfg in block['configs']:
+                    self.read_result.emit(cfg['id'], e)
 
     def connect_device(self):
         try:
@@ -1424,10 +1504,13 @@ class MainWindow(QMainWindow):
             self.log("warn", "请先连接设备")
             return
 
-        for widget in parent_widget.findChildren(RegisterWidget):
-            self.read_single_register(widget.config)
-            QApplication.processEvents()
-            time.sleep(0.05)  # Prevent flooding the bus
+        # Collect all register configurations from the current tab
+        configs_to_read = [w.config for w in parent_widget.findChildren(RegisterWidget)]
+
+        if configs_to_read:
+            self.log("info", f"开始批量读取 {len(configs_to_read)} 个寄存器...")
+            # Pass the whole list to the new worker method
+            self.modbus_worker.read_multiple_registers(configs_to_read)
 
     def write_all_registers(self, parent_widget):
         if not (self.modbus_worker and self.disconnect_btn.isEnabled()):
