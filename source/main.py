@@ -941,18 +941,32 @@ class ModbusWorker(QObject):
 
     def __init__(self, port, baudrate, parity, stopbits, timeout):
         super().__init__()
-        self.client = ModbusSerialClient(port=port, baudrate=baudrate, parity=parity, stopbits=stopbits, timeout=timeout)
+        # 存储连接参数作为实例属性
+        self._port = port
+        self._baudrate = baudrate
+        # 初始化 ModbusSerialClient
+        self.client = ModbusSerialClient(
+            # method='rtu' removed for v3 compatibility
+            port=self._port,
+            baudrate=self._baudrate,
+            parity=parity,
+            stopbits=stopbits,
+            timeout=timeout
+        )
 
     def connect_device(self):
         try:
             if self.client.connect():
-                self.connection_status.emit(True, f"成功连接到 {self.client.port}")
-                self.log_message.emit("info", f"串口 {self.client.port} 已连接。")
+                # 使用 self._port 报告连接状态
+                self.connection_status.emit(True, f"成功连接到 {self._port}")
+                self.log_message.emit("info", f"串口 {self._port} 已连接。")
             else:
-                raise ConnectionError("连接失败")
+                # 即使连接失败，也报告尝试的端口
+                raise ConnectionError(f"连接失败: 无法打开端口 {self._port}")
         except Exception as e:
+            # 在错误日志中也使用 self._port
             self.connection_status.emit(False, f"连接失败: {e}")
-            self.log_message.emit("error", f"连接串口 {self.client.port} 失败: {e}")
+            self.log_message.emit("error", f"连接串口 {self._port} 失败: {e}")
 
     def disconnect_device(self):
         if self.client.is_socket_open(): self.client.close()
