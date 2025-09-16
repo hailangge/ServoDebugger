@@ -1167,6 +1167,9 @@ class RegisterWidget(QWidget):
         # Set tooltip
         tooltip_text = (f"ID: {config['id']}\n"
                         f"地址: {config['address']}\n"
+                        f"类型: {config['type']}\n"
+                        f"范围: {config.get('range', 'N/A')}\n"
+                        f"生效: {config.get('effect', 'N/A')}\n"
                         f"{config.get('tooltip', '')}")
         self.setToolTip(tooltip_text)
 
@@ -1376,7 +1379,7 @@ class MainWindow(QMainWindow):
         sub_group_order = defaultdict(list)
 
         for reg in REGISTER_MAP:
-            if reg['name'] == "保留" or reg.get('sub_group') == "保留项":
+            if reg['name'] == "保留" or reg.get('sub_group') == "保留项" or reg.get('address') <= 0:
                 continue
             group = reg['group']
             sub_group = reg.get('sub_group', '常规')
