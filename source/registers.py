@@ -358,6 +358,10 @@ VELOCITY_PARAMETERS = [
      "word_order": "big", "read_only": False, "range": "-2147483647~+2147483647", "effect": "立即"},
     {"id": "FU125", "name": "原点检索启动方式", "group": "速度参数", "sub_group": "原点回归", "type": "enum16", "address": 125,
      "read_only": False, "effect": "立即", "options": {0: "不寻找", 1: "开机自动寻找", 2: "I/O口触发", 3: "立即出发", 4: "开机和报警复位时自动寻找"}},
+    {"id": "FU126", "name": "零速度嵌位时速度值 (0.1r/min)", "group": "速度参数", "sub_group": "原点回归", "type": "u16", "address": 126,
+     "read_only": False, "range": "0-30000", "effect": "立即"},
+    {"id": "FU127", "name": "零速度嵌位使能", "group": "速度参数", "sub_group": "原点回归", "type": "enum16", "address": 127,
+     "read_only": False, "effect": "立即", "options": {0: "不启用零速度嵌位", 1: "启用零速度嵌位"}},
     {"id": "FU128", "name": "原点找到信号持续时间 (Ms)", "group": "速度参数", "sub_group": "原点回归", "type": "u16", "address": 128,
      "read_only": False, "range": "0-30000", "effect": "立即"},
     {"id": "FU129", "name": "原点检索超时时间 (Ms)", "group": "速度参数", "sub_group": "原点回归", "type": "u16", "address": 129,
@@ -580,6 +584,8 @@ POSITION_PARAMETERS = [
     ]},
     {"id": "FU349", "name": "多段内部位置循环次数", "group": "位置参数", "sub_group": "内部位置模式", "type": "u16", "address": 349,
      "read_only": False, "range": "0-30000", "effect": "立即", "tooltip": "0表示无限循环"},
+    {"id": "FU338", "name": "内部位置给定速度单位", "group": "位置参数", "sub_group": "内部位置模式", "type": "enum16", "address": 338,
+     "read_only": False, "effect": "立即", "options": {0: "电机实际转速(0.1r/min)，与电子齿轮比无关", 1: "0.01KHz，经过电子齿轮分频"}},
 
     # --- 多段位置速度(1-8) ---
     {"id": "FU330", "name": "位置1 给定速度 (0.1r/min)", "group": "位置参数", "sub_group": "多段位置速度(1-8)", "type": "u16",
@@ -698,6 +704,20 @@ POSITION_PARAMETERS = [
      "address": 372, "read_only": False, "range": "0-32000", "effect": "立即"},
     {"id": "FU373", "name": "第8段结束后间隔时间 (ms)", "group": "位置参数", "sub_group": "多段位置间隔时间(1-8)", "type": "u16",
      "address": 373, "read_only": False, "range": "0-32000", "effect": "立即"},
+
+    # --- 指令来源 ---
+    {"id": "FU374", "name": "位置脉冲模式指令来源", "group": "位置参数", "sub_group": "指令来源与混合模式", "type": "bit_field",
+     "address": 374, "read_only": False, "effect": "立即", "tooltip": "配置位置脉冲模式下, 指令可来自哪些源的叠加", "fields": [
+        {"name": "[B]内部位置脉冲", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "关闭来源", 1: "开启来源"}},
+        {"name": "[C]高速计数器", "start_bit": 4, "length": 1, "type": "enum", "options": {0: "关闭来源", 1: "开启来源"}},
+        {"name": "[D]低速脉冲", "start_bit": 0, "length": 1, "type": "enum", "options": {0: "关闭来源", 1: "开启来源"}}
+    ]},
+    {"id": "FU375", "name": "内部位置模式指令来源", "group": "位置参数", "sub_group": "指令来源与混合模式", "type": "bit_field",
+     "address": 375, "read_only": False, "effect": "立即", "tooltip": "配置内部位置模式下, 指令可来自哪些源的叠加", "fields": [
+        {"name": "[B]内部位置脉冲", "start_bit": 8, "length": 1, "type": "enum", "options": {0: "关闭来源", 1: "开启来源"}},
+        {"name": "[C]高速计数器1", "start_bit": 4, "length": 1, "type": "enum", "options": {0: "关闭来源", 1: "开启来源"}},
+        {"name": "[D]低速脉冲", "start_bit": 0, "length": 1, "type": "enum", "options": {0: "关闭来源", 1: "开启来源"}}
+    ]},
 ]
 
 # ==============================================================================
@@ -835,11 +855,11 @@ COMMUNICATION_PARAMETERS = [
     }, "tooltip": "设为不允许时, 掉电后通讯写入的数据会丢失"},
 
     # --- 引脚功能复用 (与通讯相关) ---
-    {"id": "FU020", "name": "分频信号/引脚功能设置", "group": "通讯参数", "sub_group": "引脚功能复用", "type": "enum16", "address": 20, "read_only": False, "effect": "重新上电保存", "tooltip": "警告: 此参数会改变硬件引脚功能！仅对小功率型号有效。详见手册P79, P91", "options": {
-        0: "26/10脚=MODBUS, DO1可由FU421配置",
-        1: "26/10脚=MODBUS, DO1固定为Z相集电极输出",
-        2: "26/10脚=A相差分, 30/15脚=B相差分 (MODBUS不可用)"
-    }},
+    # {"id": "FU020", "name": "分频信号/引脚功能设置", "group": "通讯参数", "sub_group": "引脚功能复用", "type": "enum16", "address": 20, "read_only": False, "effect": "重新上电保存", "tooltip": "警告: 此参数会改变硬件引脚功能！仅对小功率型号有效。详见手册P79, P91", "options": {
+    #     0: "26/10脚=MODBUS, DO1可由FU421配置",
+    #     1: "26/10脚=MODBUS, DO1固定为Z相集电极输出",
+    #     2: "26/10脚=A相差分, 30/15脚=B相差分 (MODBUS不可用)"
+    # }},
 ]
 
 # ==============================================================================
@@ -908,3 +928,8 @@ REGISTER_MAP.extend(TORQUE_PARAMETERS)
 REGISTER_MAP.extend(POSITION_PARAMETERS)
 REGISTER_MAP.extend(IO_PARAMETERS)
 REGISTER_MAP.extend(COMMUNICATION_PARAMETERS)
+
+REGISTER_MAP.sort(key=lambda x: x['address'])
+for element in REGISTER_MAP:
+    print(element)
+
